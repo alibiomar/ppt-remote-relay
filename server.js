@@ -145,6 +145,10 @@ wss.on('connection', ws => {
           expiresAt: record.expiresAt
         })
 
+        json(ws, {
+          type: 'desktop_online'
+        })
+
         // Tell desktop that phone is connected.
         json(record.desktop, {
           type: 'phone_connected'
@@ -179,7 +183,7 @@ wss.on('connection', ws => {
       ws.role === 'phone'
     ) {
       if (
-        ['next', 'prev', 'start', 'end'].includes(
+        ['next', 'prev', 'start', 'end', 'laser_off'].includes(
           msg.action
         )
       ) {
@@ -190,6 +194,18 @@ wss.on('connection', ws => {
         )
       }
 
+      return
+    }
+
+    if (
+      msg.type === 'pointer' &&
+      ws.role === 'phone' &&
+      Number.isFinite(msg.x) &&
+      Number.isFinite(msg.y) &&
+      msg.x >= 0 && msg.x <= 1 &&
+      msg.y >= 0 && msg.y <= 1
+    ) {
+      json(record.desktop, { type: 'pointer', x: msg.x, y: msg.y })
       return
     }
 
@@ -212,6 +228,10 @@ wss.on('connection', ws => {
 
     if (record.desktop === ws) {
       record.desktop = null
+
+      json(record.phone, {
+        type: 'desktop_disconnected'
+      })
     }
 
     if (record.phone === ws) {
